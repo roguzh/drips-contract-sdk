@@ -16,8 +16,19 @@ A TypeScript SDK for interacting with the Drips Raffle smart contract on Sui blo
 
 ### Installation
 
+#### From GitHub (Recommended)
 ```bash
-npm install @drips/raffle-sdk
+npm install git+https://github.com/yourusername/drips-raffle-sdk.git
+```
+
+#### Or using a specific version/tag
+```bash
+npm install git+https://github.com/yourusername/drips-raffle-sdk.git#v1.0.0
+```
+
+#### Or using yarn
+```bash
+yarn add git+https://github.com/yourusername/drips-raffle-sdk.git
 ```
 
 ### Server-Side Usage

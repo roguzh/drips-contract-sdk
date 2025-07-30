@@ -12,7 +12,7 @@ The SDK is **fully compatible** with frontend wallet adapters and provides two a
 ## Installation
 
 ```bash
-npm install @drips/raffle-sdk @mysten/wallet-adapter-react
+npm install git+https://github.com/yourusername/drips-raffle-sdk.git @mysten/wallet-adapter-react
 ```
 
 ## Basic Setup

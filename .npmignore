@@ -1,0 +1,35 @@
+# Source files (users don't need these)
+src/
+tsconfig.json
+tsconfig.browser.json
+
+# Development files
+test.js
+test.ts
+demo.js
+*.test.ts
+*.spec.ts
+
+# Build files
+*.tsbuildinfo
+
+# Environment and config
+.env*
+.gitignore
+.eslintrc*
+jest.config*
+
+# Documentation that's not needed in package
+PROJECT_SUMMARY.md
+
+# Git
+.git/
+
+# Only include what users need:
+# - dist/ (built code)
+# - package.json
+# - README.md
+# - LICENSE
+# - CHANGELOG.md
+# - FRONTEND_GUIDE.md
+# - examples/

@@ -10,7 +10,7 @@
     "dev": "tsc --watch",
     "test": "jest",
     "lint": "eslint src/**/*.ts",
-    "prepublishOnly": "npm run build"
+    "prepare": "npm run build"
   },
   "keywords": [
     "sui",
@@ -45,7 +45,10 @@
   "files": [
     "dist/",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md",
+    "FRONTEND_GUIDE.md",
+    "examples/"
   ],
   "engines": {
     "node": ">=16.0.0"

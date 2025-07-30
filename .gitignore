@@ -1,8 +1,8 @@
 # Node modules
 node_modules/
 
-# Build output
-dist/
+# Build output (comment out dist/ for GitHub installation)
+# dist/
 *.tsbuildinfo
 
 # Test files

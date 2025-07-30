@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for testnet, mainnet, and devnet
 - Error handling with specific error types
 - Examples and documentation
+- Frontend wallet adapter integration
+- Direct GitHub installation support
 
 ### Features
 - ✅ Create NFT raffles with customizable parameters
@@ -30,3 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Type-safe operations with full TypeScript support
 - ✅ Multi-network support
 - ✅ Comprehensive error handling
+- ✅ Frontend wallet adapter compatibility
+- ✅ React/Vue/Angular integration ready
+- ✅ Server-side and client-side usage patterns
+- ✅ Install directly from GitHub repository

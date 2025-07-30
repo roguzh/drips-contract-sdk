@@ -1,0 +1,53 @@
+{
+  "name": "@drips/raffle-sdk",
+  "version": "1.0.0",
+  "description": "TypeScript SDK for interacting with Drips Raffle contracts on Sui blockchain",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "build:browser": "tsc -p tsconfig.browser.json",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "sui",
+    "blockchain",
+    "nft",
+    "raffle",
+    "sdk",
+    "move",
+    "drips",
+    "typescript"
+  ],
+  "author": "Drips Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/drips-raffle-sdk.git"
+  },
+  "dependencies": {
+    "@mysten/kiosk": "^0.8.1",
+    "@mysten/sui": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0",
+    "ts-jest": "^29.0.0"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

@@ -163,6 +163,92 @@ console.log('Participants:', joinResult.participantCount);
 console.log('Position:', joinResult.participantPosition);
 ```
 
+### Raffle Management
+
+#### Get Raffle Details
+
+```typescript
+const details = await sdk.getRaffleDetails(raffleId);
+
+console.log('Prize NFT:', details.nftMetadata?.name);
+console.log('Status:', details.status); // 'Active' | 'Ended' | 'WinnerSelected'
+console.log('Participants:', details.participantsCount);
+console.log('Entry Cost:', details.entryCostFormatted); // "0.1 SUI"
+console.log('Time Left:', details.timeRemaining); // "23h 45m"
+```
+
+#### Discover Raffles (No IDs Required!) 🆕
+
+```typescript
+// Get all raffles from the House
+const allRaffles = await sdk.queryRaffles({
+  limit: 20,
+  includeDetails: true,
+  status: 'all' // 'active' | 'ended' | 'all'
+});
+
+console.log(`Found ${allRaffles.raffles.length} raffles`);
+
+// Pagination support
+if (allRaffles.hasNextPage) {
+  const nextPage = await sdk.queryRaffles({
+    cursor: allRaffles.nextCursor,
+    limit: 20
+  });
+}
+```
+
+#### Find Raffles by Creator 🆕
+
+```typescript
+const creatorRaffles = await sdk.getRafflesByCreator(creatorAddress, {
+  limit: 10, 
+  includeDetails: true
+});
+
+console.log(`Creator has ${creatorRaffles.raffles.length} raffles`);
+```
+
+#### Search Raffles 🆕
+
+```typescript
+// Search by NFT name, description, or collection
+const searchResults = await sdk.searchRaffles("Mythical Dragon", {
+  limit: 5
+});
+
+console.log(`Found ${searchResults.raffles.length} matching raffles`);
+```
+
+#### Select Winner
+
+```typescript
+// Only raffle creator can select winner after deadline
+const result = await sdk.selectWinner(raffleId, operatorCapId, privateKey);
+
+if (result.success) {
+  console.log('Winner:', result.winner);
+  console.log('Prize transferred to winner');
+}
+```
+
+#### Filter Raffles
+
+```typescript
+const raffleIds = ['0xraffle1...', '0xraffle2...'];
+
+// Get only active raffles
+const activeRaffles = await sdk.getActiveRaffles(raffleIds);
+
+// Get only ended raffles  
+const endedRaffles = await sdk.getEndedRaffles(raffleIds);
+
+// Filter by status
+const details = await sdk.getRaffleDetails(raffleId);
+const isJoinable = DripsUtils.isRaffleJoinable(details);
+const canSelectWinner = DripsUtils.canSelectWinner(details);
+```
+
 ## API Reference
 
 ### DripsSDK

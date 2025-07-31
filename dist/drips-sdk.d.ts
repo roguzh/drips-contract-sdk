@@ -73,11 +73,13 @@ export declare class DripsSDK {
      */
     getEndedRaffles(raffleIds: string[]): Promise<RaffleDetails[]>;
     /**
-     * Query raffles from the House object without needing to know specific raffle IDs
+     * Query raffles from the blockchain using events and object queries
+     * This implementation works with the actual contract structure
      */
     queryRaffles(options?: RaffleQueryOptions): Promise<RaffleQueryResult>;
     /**
      * Get all raffles created by a specific creator address
+     * Uses OperatorCap objects to find raffles owned by the creator
      */
     getRafflesByCreator(creatorAddress: string, options?: RaffleQueryOptions): Promise<RaffleQueryResult>;
     /**

@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-07-31
+
+### Added - Major Feature: Raffle Discovery 🆕
+- **queryRaffles()** - Discover all raffles without needing specific IDs
+- **getRafflesByCreator()** - Find raffles created by specific addresses
+- **searchRaffles()** - Search raffles by NFT name, description, or collection
+- **Pagination support** - Cursor-based pagination for large result sets
+- **Status filtering** - Filter by active, ended, or all raffles
+- **RaffleQueryOptions** and **RaffleQueryResult** types for query parameters
+
+### Changed
+- **SDKConfig** now requires `houseId` parameter for raffle discovery
+- Updated examples to demonstrate new discovery features
+- Enhanced documentation with raffle discovery examples
+
+### Breaking Changes
+- `createDripsSDK()` now requires valid `houseId` for the network
+- Added new required parameter to SDKConfig interface
+
 ## [1.0.0] - 2025-07-31
 
 ### Added

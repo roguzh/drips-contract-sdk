@@ -558,63 +558,91 @@ class DripsSDK {
         return endedRaffles;
     }
     /**
-     * Query raffles from the House object without needing to know specific raffle IDs
+     * Query raffles from the blockchain using events and object queries
+     * This implementation works with the actual contract structure
      */
     async queryRaffles(options = {}) {
         try {
             const { limit = 50, cursor, includeDetails = true, status = 'all' } = options;
-            // Get the House object to find all raffles
-            const houseData = await this.client.getObject({
-                id: this.config.houseId,
-                options: {
-                    showContent: true,
-                    showType: true
-                }
-            });
-            if (!houseData.data?.content || houseData.data.content.dataType !== 'moveObject') {
-                throw new types_1.DripsSDKError('Invalid House object data');
-            }
-            const houseContent = houseData.data.content.fields;
-            // Get raffle IDs from the House's raffle registry/table
+            // Method 1: Get raffle IDs from events (most reliable)
             let raffleIds = [];
-            // Try to extract raffle IDs from the House object structure
-            if (houseContent.raffles) {
-                // If raffles are stored in a simple vector
-                if (Array.isArray(houseContent.raffles)) {
-                    raffleIds = houseContent.raffles;
-                }
-                // If raffles are stored in a Table or similar structure
-                else if (houseContent.raffles.fields && houseContent.raffles.fields.id) {
-                    // Query the dynamic fields of the table
-                    const tableId = houseContent.raffles.fields.id.id;
-                    const dynamicFields = await this.client.getDynamicFields({
-                        parentId: tableId,
-                        limit: limit,
-                        cursor: cursor
-                    });
-                    raffleIds = dynamicFields.data.map(field => field.objectId);
-                }
-            }
-            // If no raffles found in House, try querying objects of raffle type
-            if (raffleIds.length === 0) {
-                const raffleObjects = await this.client.getOwnedObjects({
-                    owner: this.config.houseId,
-                    options: {
-                        showType: true,
-                        showContent: false
+            try {
+                const events = await this.client.queryEvents({
+                    query: {
+                        MoveModule: {
+                            package: this.config.packageId,
+                            module: 'raffle' // Events are in the raffle module
+                        }
                     },
-                    limit: limit,
-                    cursor: cursor
+                    limit: limit * 2, // Get more events to filter for unique raffles
+                    order: 'descending'
                 });
-                raffleIds = raffleObjects.data
-                    .filter(obj => obj.data?.type?.includes('raffle::Raffle'))
-                    .map(obj => obj.data?.objectId)
-                    .filter(Boolean);
+                // Extract raffle IDs from events
+                const raffleIdSet = new Set();
+                events.data.forEach(event => {
+                    if (event.parsedJson && typeof event.parsedJson === 'object') {
+                        const parsed = event.parsedJson;
+                        // Handle nested event structure
+                        const eventData = parsed.pos0 || parsed;
+                        const raffleId = eventData.raffle_id;
+                        if (raffleId && typeof raffleId === 'string') {
+                            raffleIdSet.add(raffleId);
+                        }
+                    }
+                });
+                raffleIds = Array.from(raffleIdSet);
             }
+            catch (eventError) {
+                console.warn('Event-based discovery failed, trying alternative methods');
+            }
+            // Method 2: Fallback - search through owned objects (less reliable)
+            if (raffleIds.length === 0) {
+                try {
+                    const ownedObjects = await this.client.getOwnedObjects({
+                        owner: this.config.houseId,
+                        options: {
+                            showType: true,
+                            showContent: true
+                        },
+                        limit: limit
+                    });
+                    // Look for OperatorCap objects that contain raffle IDs
+                    const operatorCaps = ownedObjects.data.filter(obj => obj.data?.type?.includes('RaffleOperatorCap'));
+                    for (const cap of operatorCaps) {
+                        if (cap.data?.content && cap.data.content.dataType === 'moveObject') {
+                            const fields = cap.data.content.fields;
+                            // Handle object ID structure
+                            let raffleId = fields.raffle_id || fields.raffleId;
+                            if (raffleId && typeof raffleId === 'object' && raffleId.id) {
+                                raffleId = raffleId.id;
+                            }
+                            if (raffleId && typeof raffleId === 'string') {
+                                raffleIds.push(raffleId);
+                            }
+                        }
+                    }
+                }
+                catch (ownedObjectsError) {
+                    console.warn('Owned objects discovery also failed');
+                }
+            }
+            // Remove duplicates and apply pagination
+            raffleIds = [...new Set(raffleIds)];
+            // Simple cursor-based pagination
+            let startIndex = 0;
+            if (cursor) {
+                const cursorIndex = raffleIds.indexOf(cursor);
+                if (cursorIndex !== -1) {
+                    startIndex = cursorIndex + 1;
+                }
+            }
+            const paginatedIds = raffleIds.slice(startIndex, startIndex + limit);
+            const hasNextPage = startIndex + limit < raffleIds.length;
+            const nextCursor = hasNextPage ? paginatedIds[paginatedIds.length - 1] : undefined;
             // Fetch details for each raffle if requested
             const raffles = [];
-            if (includeDetails && raffleIds.length > 0) {
-                const rafflePromises = raffleIds.map(async (raffleId) => {
+            if (includeDetails && paginatedIds.length > 0) {
+                const rafflePromises = paginatedIds.map(async (raffleId) => {
                     try {
                         return await this.getRaffleDetails(raffleId);
                     }
@@ -637,7 +665,7 @@ class DripsSDK {
             }
             else {
                 // Just return basic info without full details
-                for (const raffleId of raffleIds) {
+                for (const raffleId of paginatedIds) {
                     raffles.push({
                         objectId: raffleId,
                     });
@@ -645,8 +673,8 @@ class DripsSDK {
             }
             return {
                 raffles,
-                hasNextPage: raffleIds.length === limit,
-                nextCursor: raffleIds.length === limit ? raffleIds[raffleIds.length - 1] : undefined,
+                hasNextPage,
+                nextCursor,
                 totalCount: raffleIds.length
             };
         }
@@ -656,6 +684,7 @@ class DripsSDK {
     }
     /**
      * Get all raffles created by a specific creator address
+     * Uses OperatorCap objects to find raffles owned by the creator
      */
     async getRafflesByCreator(creatorAddress, options = {}) {
         try {
@@ -671,15 +700,19 @@ class DripsSDK {
                 cursor: cursor
             });
             // Filter for operator caps which indicate created raffles
-            const operatorCaps = creatorObjects.data.filter(obj => obj.data?.type?.includes('raffle::OperatorCap'));
+            const operatorCaps = creatorObjects.data.filter(obj => obj.data?.type?.includes('RaffleOperatorCap'));
             const raffles = [];
             if (includeDetails) {
                 for (const cap of operatorCaps) {
                     try {
                         if (cap.data?.content && cap.data.content.dataType === 'moveObject') {
                             const capFields = cap.data.content.fields;
-                            const raffleId = capFields.raffle_id || capFields.raffleId;
-                            if (raffleId) {
+                            let raffleId = capFields.raffle_id || capFields.raffleId;
+                            // Handle object ID structure from Sui
+                            if (raffleId && typeof raffleId === 'object' && raffleId.id) {
+                                raffleId = raffleId.id;
+                            }
+                            if (raffleId && typeof raffleId === 'string') {
                                 const raffleDetails = await this.getRaffleDetails(raffleId);
                                 raffles.push(raffleDetails);
                             }

@@ -11,28 +11,25 @@ export { DripsSDK } from './drips-sdk';
 import { DripsSDK } from './drips-sdk';
 
 // Types and interfaces
-export {
+export type {
   RaffleInfo,
   NFTMetadata,
   CreateRaffleParams,
   JoinRaffleParams,
-  RaffleStatus,
-  RaffleDetails,
-  SDKConfig,
-  TransactionResult,
   CreateRaffleResult,
   JoinRaffleResult,
   WinnerSelectionResult,
-  RaffleEventType,
-  RaffleEvent,
+  RaffleDetails,
+  RaffleStatus,
+  SDKConfig,
+  TransactionResult,
   TransactionBuilderResult,
   WalletAdapter,
-  
-  // Error types
+  RaffleQueryOptions,
+  RaffleQueryResult,
   DripsSDKError,
   RaffleNotFoundError,
   InvalidRaffleStateError,
-  InsufficientFundsError,
   NetworkError
 } from './types';
 
@@ -50,18 +47,32 @@ export const PACKAGE_IDS = {
   devnet: ''   // To be filled when deployed to devnet
 };
 
+// Default House IDs for different networks  
+export const HOUSE_IDS = {
+  testnet: '0x33940b0b58b225b6f3673608c16acca032ceb3107aa47204ee33fa6f827b0452',
+  mainnet: '', // To be filled when deployed to mainnet
+  devnet: ''   // To be filled when deployed to devnet
+};
+
 /**
  * Create a new DripsSDK instance with default configuration
  */
 export function createDripsSDK(network: 'testnet' | 'mainnet' | 'devnet', privateKey?: string): DripsSDK {
   const packageId = PACKAGE_IDS[network];
+  const houseId = HOUSE_IDS[network];
+  
   if (!packageId) {
     throw new Error(`Package ID not available for network: ${network}`);
   }
   
+  if (!houseId) {
+    throw new Error(`House ID not available for network: ${network}`);
+  }
+
   return new DripsSDK({
     network,
     packageId,
+    houseId,
     privateKey
   });
 }

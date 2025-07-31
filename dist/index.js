@@ -7,22 +7,13 @@
  * joining raffles, selecting winners, and managing NFT metadata.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.VERSION = exports.PACKAGE_IDS = exports.RaffleEventListener = exports.RaffleBuilder = exports.DripsUtils = exports.NetworkError = exports.InsufficientFundsError = exports.InvalidRaffleStateError = exports.RaffleNotFoundError = exports.DripsSDKError = exports.RaffleEventType = exports.DripsSDK = void 0;
+exports.VERSION = exports.HOUSE_IDS = exports.PACKAGE_IDS = exports.RaffleEventListener = exports.RaffleBuilder = exports.DripsUtils = exports.DripsSDK = void 0;
 exports.createDripsSDK = createDripsSDK;
 exports.quickStart = quickStart;
 // Main SDK class
 var drips_sdk_1 = require("./drips-sdk");
 Object.defineProperty(exports, "DripsSDK", { enumerable: true, get: function () { return drips_sdk_1.DripsSDK; } });
 const drips_sdk_2 = require("./drips-sdk");
-// Types and interfaces
-var types_1 = require("./types");
-Object.defineProperty(exports, "RaffleEventType", { enumerable: true, get: function () { return types_1.RaffleEventType; } });
-// Error types
-Object.defineProperty(exports, "DripsSDKError", { enumerable: true, get: function () { return types_1.DripsSDKError; } });
-Object.defineProperty(exports, "RaffleNotFoundError", { enumerable: true, get: function () { return types_1.RaffleNotFoundError; } });
-Object.defineProperty(exports, "InvalidRaffleStateError", { enumerable: true, get: function () { return types_1.InvalidRaffleStateError; } });
-Object.defineProperty(exports, "InsufficientFundsError", { enumerable: true, get: function () { return types_1.InsufficientFundsError; } });
-Object.defineProperty(exports, "NetworkError", { enumerable: true, get: function () { return types_1.NetworkError; } });
 // Utilities
 var utils_1 = require("./utils");
 Object.defineProperty(exports, "DripsUtils", { enumerable: true, get: function () { return utils_1.DripsUtils; } });
@@ -34,17 +25,28 @@ exports.PACKAGE_IDS = {
     mainnet: '', // To be filled when deployed to mainnet
     devnet: '' // To be filled when deployed to devnet
 };
+// Default House IDs for different networks  
+exports.HOUSE_IDS = {
+    testnet: '0x33940b0b58b225b6f3673608c16acca032ceb3107aa47204ee33fa6f827b0452',
+    mainnet: '', // To be filled when deployed to mainnet
+    devnet: '' // To be filled when deployed to devnet
+};
 /**
  * Create a new DripsSDK instance with default configuration
  */
 function createDripsSDK(network, privateKey) {
     const packageId = exports.PACKAGE_IDS[network];
+    const houseId = exports.HOUSE_IDS[network];
     if (!packageId) {
         throw new Error(`Package ID not available for network: ${network}`);
+    }
+    if (!houseId) {
+        throw new Error(`House ID not available for network: ${network}`);
     }
     return new drips_sdk_2.DripsSDK({
         network,
         packageId,
+        houseId,
         privateKey
     });
 }

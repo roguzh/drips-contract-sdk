@@ -16,6 +16,8 @@ import {
   TransactionResult,
   TransactionBuilderResult,
   WalletAdapter,
+  RaffleQueryOptions,
+  RaffleQueryResult,
   DripsSDKError,
   RaffleNotFoundError,
   InvalidRaffleStateError,
@@ -655,6 +657,201 @@ export class DripsSDK {
     }
     
     return endedRaffles;
+  }
+
+  /**
+   * Query raffles from the House object without needing to know specific raffle IDs
+   */
+  async queryRaffles(options: RaffleQueryOptions = {}): Promise<RaffleQueryResult> {
+    try {
+      const {
+        limit = 50,
+        cursor,
+        includeDetails = true,
+        status = 'all'
+      } = options;
+
+      // Get the House object to find all raffles
+      const houseData = await this.client.getObject({
+        id: this.config.houseId,
+        options: {
+          showContent: true,
+          showType: true
+        }
+      });
+
+      if (!houseData.data?.content || houseData.data.content.dataType !== 'moveObject') {
+        throw new DripsSDKError('Invalid House object data');
+      }
+
+      const houseContent = houseData.data.content.fields as any;
+      
+      // Get raffle IDs from the House's raffle registry/table
+      let raffleIds: string[] = [];
+      
+      // Try to extract raffle IDs from the House object structure
+      if (houseContent.raffles) {
+        // If raffles are stored in a simple vector
+        if (Array.isArray(houseContent.raffles)) {
+          raffleIds = houseContent.raffles;
+        }
+        // If raffles are stored in a Table or similar structure
+        else if (houseContent.raffles.fields && houseContent.raffles.fields.id) {
+          // Query the dynamic fields of the table
+          const tableId = houseContent.raffles.fields.id.id;
+          const dynamicFields = await this.client.getDynamicFields({
+            parentId: tableId,
+            limit: limit,
+            cursor: cursor
+          });
+          
+          raffleIds = dynamicFields.data.map(field => field.objectId);
+        }
+      }
+
+      // If no raffles found in House, try querying objects of raffle type
+      if (raffleIds.length === 0) {
+        const raffleObjects = await this.client.getOwnedObjects({
+          owner: this.config.houseId,
+          options: {
+            showType: true,
+            showContent: false
+          },
+          limit: limit,
+          cursor: cursor
+        });
+
+        raffleIds = raffleObjects.data
+          .filter(obj => obj.data?.type?.includes('raffle::Raffle'))
+          .map(obj => obj.data?.objectId!)
+          .filter(Boolean);
+      }
+
+      // Fetch details for each raffle if requested
+      const raffles: RaffleDetails[] = [];
+      
+      if (includeDetails && raffleIds.length > 0) {
+        const rafflePromises = raffleIds.map(async (raffleId) => {
+          try {
+            return await this.getRaffleDetails(raffleId);
+          } catch (error) {
+            // Skip invalid raffles
+            return null;
+          }
+        });
+
+        const raffleResults = await Promise.all(rafflePromises);
+        
+        for (const raffle of raffleResults) {
+          if (raffle) {
+            // Apply status filter
+            if (status === 'active' && !raffle.status.isActive) continue;
+            if (status === 'ended' && !raffle.status.isEnded) continue;
+            
+            raffles.push(raffle);
+          }
+        }
+      } else {
+        // Just return basic info without full details
+        for (const raffleId of raffleIds) {
+          raffles.push({
+            objectId: raffleId,
+          } as RaffleDetails);
+        }
+      }
+
+      return {
+        raffles,
+        hasNextPage: raffleIds.length === limit,
+        nextCursor: raffleIds.length === limit ? raffleIds[raffleIds.length - 1] : undefined,
+        totalCount: raffleIds.length
+      };
+
+    } catch (error) {
+      throw new NetworkError(`Failed to query raffles: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get all raffles created by a specific creator address
+   */
+  async getRafflesByCreator(creatorAddress: string, options: RaffleQueryOptions = {}): Promise<RaffleQueryResult> {
+    try {
+      const { limit = 50, cursor, includeDetails = true } = options;
+
+      // Query objects owned by the creator that are raffle-related
+      const creatorObjects = await this.client.getOwnedObjects({
+        owner: creatorAddress,
+        options: {
+          showType: true,
+          showContent: includeDetails
+        },
+        limit: limit,
+        cursor: cursor
+      });
+
+      // Filter for operator caps which indicate created raffles
+      const operatorCaps = creatorObjects.data.filter(obj => 
+        obj.data?.type?.includes('raffle::OperatorCap')
+      );
+
+      const raffles: RaffleDetails[] = [];
+
+      if (includeDetails) {
+        for (const cap of operatorCaps) {
+          try {
+            if (cap.data?.content && cap.data.content.dataType === 'moveObject') {
+              const capFields = cap.data.content.fields as any;
+              const raffleId = capFields.raffle_id || capFields.raffleId;
+              
+              if (raffleId) {
+                const raffleDetails = await this.getRaffleDetails(raffleId);
+                raffles.push(raffleDetails);
+              }
+            }
+          } catch (error) {
+            // Skip invalid raffles
+            continue;
+          }
+        }
+      }
+
+      return {
+        raffles,
+        hasNextPage: creatorObjects.hasNextPage,
+        nextCursor: creatorObjects.nextCursor || undefined,
+        totalCount: operatorCaps.length
+      };
+
+    } catch (error) {
+      throw new NetworkError(`Failed to get raffles by creator: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Search for raffles containing specific NFT types or names
+   */
+  async searchRaffles(searchTerm: string, options: RaffleQueryOptions = {}): Promise<RaffleQueryResult> {
+    // Get all raffles first
+    const allRaffles = await this.queryRaffles({ ...options, includeDetails: true });
+    
+    // Filter based on search term
+    const filteredRaffles = allRaffles.raffles.filter(raffle => {
+      if (!raffle.nftMetadata) return false;
+      
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        raffle.nftMetadata.name?.toLowerCase().includes(searchLower) ||
+        raffle.nftMetadata.description?.toLowerCase().includes(searchLower) ||
+        raffle.nftMetadata.collection?.toLowerCase().includes(searchLower)
+      );
+    });
+
+    return {
+      raffles: filteredRaffles,
+      hasNextPage: false,
+      totalCount: filteredRaffles.length
+    };
   }
 
   // Helper methods

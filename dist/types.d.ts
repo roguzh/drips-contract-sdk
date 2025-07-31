@@ -59,6 +59,7 @@ export interface RaffleDetails extends RaffleInfo {
 export interface SDKConfig {
     network: 'testnet' | 'mainnet' | 'devnet';
     packageId: string;
+    houseId: string;
     privateKey?: string;
 }
 export interface WalletAdapter {
@@ -94,9 +95,22 @@ export interface JoinRaffleResult extends TransactionResult {
     participantCount?: number;
 }
 export interface WinnerSelectionResult extends TransactionResult {
-    winnerId?: string;
+    winner?: string;
     winnerAddress?: string;
+    participantCount?: number;
     prizeTransferred?: boolean;
+}
+export interface RaffleQueryOptions {
+    limit?: number;
+    cursor?: string;
+    includeDetails?: boolean;
+    status?: 'active' | 'ended' | 'all';
+}
+export interface RaffleQueryResult {
+    raffles: RaffleDetails[];
+    hasNextPage: boolean;
+    nextCursor?: string;
+    totalCount?: number;
 }
 export declare enum RaffleEventType {
     RAFFLE_CREATED = "RaffleCreated",

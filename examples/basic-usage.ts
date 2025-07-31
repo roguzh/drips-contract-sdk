@@ -39,7 +39,33 @@ async function basicExample() {
     });
     console.log();
 
-    // 3. Example of checking existing raffle
+    // 3. NEW: Discover raffles without knowing IDs
+    console.log("🔍 Discovering existing raffles...");
+    try {
+      const discoveredRaffles = await sdk.queryRaffles({
+        limit: 5,
+        includeDetails: true,
+        status: 'active'
+      });
+
+      console.log(`  Found ${discoveredRaffles.raffles.length} active raffles`);
+      
+      if (discoveredRaffles.raffles.length > 0) {
+        console.log("  Active raffles:");
+        discoveredRaffles.raffles.forEach((raffle, index) => {
+          console.log(`    ${index + 1}. ${raffle.nftMetadata?.name || 'Unknown NFT'}`);
+          console.log(`       Participants: ${raffle.participantsCount}`);
+          console.log(`       Time remaining: ${DripsUtils.getTimeRemaining(raffle.formattedDeadline)}`);
+        });
+      } else {
+        console.log("  No active raffles found");
+      }
+    } catch (error) {
+      console.log("  Could not discover raffles (this is normal if none exist yet)");
+    }
+    console.log();
+
+    // 4. Example of checking existing raffle (if we have the ID)
     const existingRaffleId =
       "0x0a682571c06926aed7dafce394742b16d617942446d568c1a06b835d7b1d153b";
     console.log("🔍 Getting raffle details...");
@@ -62,7 +88,7 @@ async function basicExample() {
     }
     console.log();
 
-    // 4. Check if raffle is joinable
+    // 5. Check if raffle is joinable
     if (DripsUtils.isRaffleJoinable(raffleDetails)) {
       console.log("✅ This raffle is joinable!");
     } else {

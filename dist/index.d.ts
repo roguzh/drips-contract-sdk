@@ -7,9 +7,14 @@
  */
 export { DripsSDK } from './drips-sdk';
 import { DripsSDK } from './drips-sdk';
-export { RaffleInfo, NFTMetadata, CreateRaffleParams, JoinRaffleParams, RaffleStatus, RaffleDetails, SDKConfig, TransactionResult, CreateRaffleResult, JoinRaffleResult, WinnerSelectionResult, RaffleEventType, RaffleEvent, TransactionBuilderResult, WalletAdapter, DripsSDKError, RaffleNotFoundError, InvalidRaffleStateError, InsufficientFundsError, NetworkError } from './types';
+export type { RaffleInfo, NFTMetadata, CreateRaffleParams, JoinRaffleParams, CreateRaffleResult, JoinRaffleResult, WinnerSelectionResult, RaffleDetails, RaffleStatus, SDKConfig, TransactionResult, TransactionBuilderResult, WalletAdapter, RaffleQueryOptions, RaffleQueryResult, DripsSDKError, RaffleNotFoundError, InvalidRaffleStateError, NetworkError } from './types';
 export { DripsUtils, RaffleBuilder, RaffleEventListener } from './utils';
 export declare const PACKAGE_IDS: {
+    testnet: string;
+    mainnet: string;
+    devnet: string;
+};
+export declare const HOUSE_IDS: {
     testnet: string;
     mainnet: string;
     devnet: string;

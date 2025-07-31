@@ -66,6 +66,7 @@ export interface RaffleDetails extends RaffleInfo {
 export interface SDKConfig {
   network: 'testnet' | 'mainnet' | 'devnet';
   packageId: string;
+  houseId: string; // House object ID for querying raffles
   privateKey?: string; // Optional default private key for server-side use
 }
 
@@ -107,10 +108,27 @@ export interface JoinRaffleResult extends TransactionResult {
 }
 
 export interface WinnerSelectionResult extends TransactionResult {
-  winnerId?: string;
-  winnerAddress?: string;
-  prizeTransferred?: boolean;
+  winner?: string;
+  winnerAddress?: string; // Add this for compatibility
+  participantCount?: number;
+  prizeTransferred?: boolean; // Add this for compatibility
 }
+
+export interface RaffleQueryOptions {
+  limit?: number; // Max number of raffles to return
+  cursor?: string; // For pagination
+  includeDetails?: boolean; // Whether to fetch full details for each raffle
+  status?: 'active' | 'ended' | 'all'; // Filter by status
+}
+
+export interface RaffleQueryResult {
+  raffles: RaffleDetails[];
+  hasNextPage: boolean;
+  nextCursor?: string;
+  totalCount?: number;
+}
+
+// Error classes
 
 export enum RaffleEventType {
   RAFFLE_CREATED = 'RaffleCreated',

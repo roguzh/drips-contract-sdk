@@ -1,5 +1,5 @@
 import { SuiClient } from "@mysten/sui/client";
-import { SDKConfig, NFTMetadata, CreateRaffleParams, JoinRaffleParams, CreateRaffleResult, JoinRaffleResult, WinnerSelectionResult, RaffleDetails, TransactionBuilderResult, WalletAdapter } from './types';
+import { SDKConfig, NFTMetadata, CreateRaffleParams, JoinRaffleParams, CreateRaffleResult, JoinRaffleResult, WinnerSelectionResult, RaffleDetails, TransactionBuilderResult, WalletAdapter, RaffleQueryOptions, RaffleQueryResult } from './types';
 /**
  * Main Drips Raffle SDK class for interacting with Drips contracts on Sui
  */
@@ -72,6 +72,18 @@ export declare class DripsSDK {
      * Get all ended raffles (requires tracking raffle IDs externally)
      */
     getEndedRaffles(raffleIds: string[]): Promise<RaffleDetails[]>;
+    /**
+     * Query raffles from the House object without needing to know specific raffle IDs
+     */
+    queryRaffles(options?: RaffleQueryOptions): Promise<RaffleQueryResult>;
+    /**
+     * Get all raffles created by a specific creator address
+     */
+    getRafflesByCreator(creatorAddress: string, options?: RaffleQueryOptions): Promise<RaffleQueryResult>;
+    /**
+     * Search for raffles containing specific NFT types or names
+     */
+    searchRaffles(searchTerm: string, options?: RaffleQueryOptions): Promise<RaffleQueryResult>;
     private getNFTType;
     private extractNFTTypeFromRaffle;
 }

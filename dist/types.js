@@ -4,6 +4,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NetworkError = exports.InsufficientFundsError = exports.InvalidRaffleStateError = exports.RaffleNotFoundError = exports.DripsSDKError = exports.RaffleEventType = void 0;
+// Error classes
 var RaffleEventType;
 (function (RaffleEventType) {
     RaffleEventType["RAFFLE_CREATED"] = "RaffleCreated";

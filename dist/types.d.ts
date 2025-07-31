@@ -112,6 +112,27 @@ export interface RaffleQueryResult {
     nextCursor?: string;
     totalCount?: number;
 }
+export interface RafflableNFT {
+    objectId: string;
+    type: string;
+    version: string;
+    digest: string;
+    metadata?: NFTMetadata;
+    isCompatible: boolean;
+    incompatibilityReason?: string;
+}
+export interface RafflableNFTsResult {
+    nfts: RafflableNFT[];
+    total: number;
+    hasNextPage: boolean;
+    nextCursor?: string;
+}
+export interface GetRafflableNFTsOptions {
+    includeMetadata?: boolean;
+    onlyCompatible?: boolean;
+    limit?: number;
+    cursor?: string;
+}
 export declare enum RaffleEventType {
     RAFFLE_CREATED = "RaffleCreated",
     PARTICIPANT_JOINED = "ParticipantJoined",

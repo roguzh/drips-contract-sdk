@@ -18,6 +18,9 @@ import {
   WalletAdapter,
   RaffleQueryOptions,
   RaffleQueryResult,
+  RafflableNFT,
+  RafflableNFTsResult,
+  GetRafflableNFTsOptions,
   DripsSDKError,
   RaffleNotFoundError,
   InvalidRaffleStateError,
@@ -614,6 +617,188 @@ export class DripsSDK {
 
     } catch (error) {
       throw new NetworkError(`Failed to fetch NFT metadata: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get all rafflable NFTs owned by a user
+   * Returns NFTs that can be used to create raffles
+   */
+  async getRafflableNFTs(
+    userAddress: string, 
+    options: GetRafflableNFTsOptions = {}
+  ): Promise<RafflableNFTsResult> {
+    const {
+      includeMetadata = true,
+      onlyCompatible = false,
+      limit = 50,
+      cursor
+    } = options;
+
+    try {
+      // Get all owned objects for the user (exclude coins)
+      const ownedObjects = await this.client.getOwnedObjects({
+        owner: userAddress,
+        options: {
+          showType: true,
+          showContent: true,
+          showDisplay: true
+        },
+        limit,
+        cursor
+      });
+
+      if (!ownedObjects.data || ownedObjects.data.length === 0) {
+        return {
+          nfts: [],
+          total: 0,
+          hasNextPage: false
+        };
+      }
+
+      // Filter out non-NFT objects and process each one
+      const rafflableNFTs: RafflableNFT[] = [];
+
+      for (const obj of ownedObjects.data) {
+        if (!obj.data?.objectId || !obj.data?.type) continue;
+
+        // Skip if this is a coin or system object
+        if (this.isSystemObject(obj.data.type)) continue;
+
+        const rafflableNFT: RafflableNFT = {
+          objectId: obj.data.objectId,
+          type: obj.data.type,
+          version: obj.data.version,
+          digest: obj.data.digest,
+          isCompatible: true, // We'll validate this
+          incompatibilityReason: undefined
+        };
+
+        // Check compatibility with raffle contract
+        const compatibility = await this.checkNFTCompatibility(obj.data);
+        rafflableNFT.isCompatible = compatibility.isCompatible;
+        rafflableNFT.incompatibilityReason = compatibility.reason;
+
+        // Get metadata if requested and the NFT is compatible
+        if (includeMetadata && rafflableNFT.isCompatible) {
+          try {
+            const metadata = await this.getNFTMetadata(obj.data.objectId);
+            rafflableNFT.metadata = metadata || undefined;
+          } catch (error) {
+            // Metadata is optional, continue without it
+            console.warn(`Failed to get metadata for ${obj.data.objectId}:`, error);
+          }
+        }
+
+        // If onlyCompatible is true, skip incompatible NFTs
+        if (onlyCompatible && !rafflableNFT.isCompatible) {
+          continue;
+        }
+
+        rafflableNFTs.push(rafflableNFT);
+      }
+
+      return {
+        nfts: rafflableNFTs,
+        total: rafflableNFTs.length,
+        hasNextPage: ownedObjects.hasNextPage || false,
+        nextCursor: ownedObjects.nextCursor || undefined
+      };
+
+    } catch (error) {
+      throw new NetworkError(`Failed to fetch rafflable NFTs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Check if an object is a system object (coin, gas object, etc.)
+   */
+  private isSystemObject(type: string): boolean {
+    const systemTypes = [
+      '0x2::coin::Coin',
+      '0x2::sui::SUI',
+      '0x2::gas::GasCoin',
+      '0x1::sui::SUI',
+      '0x2::package::UpgradeCap',
+      '0x2::kiosk::KioskOwnerCap',
+      'AdminCap',
+      'OperatorCap',
+      'RaffleOperatorCap'
+    ];
+    
+    return systemTypes.some(systemType => type.includes(systemType));
+  }
+
+  /**
+   * Check if an NFT is compatible with the raffle contract
+   */
+  private async checkNFTCompatibility(objectData: any): Promise<{
+    isCompatible: boolean;
+    reason?: string;
+  }> {
+    try {
+      // Basic checks
+      if (!objectData.objectId) {
+        return { isCompatible: false, reason: 'No object ID' };
+      }
+
+      if (!objectData.type) {
+        return { isCompatible: false, reason: 'No type information' };
+      }
+
+      // Check if it's a system object (coins, capabilities, etc.)
+      if (this.isSystemObject(objectData.type)) {
+        return { isCompatible: false, reason: 'System object (not a rafflable NFT)' };
+      }
+
+      // Check for administrative capabilities or contract-specific objects
+      const nonRafflableTypes = [
+        'Cap', 'Authority', 'Treasury', 'Config', 'Registry', 
+        'Witness', 'Publisher', 'TreasuryCap', 'CoinMetadata'
+      ];
+      
+      if (nonRafflableTypes.some(type => objectData.type.includes(type))) {
+        return { isCompatible: false, reason: 'Administrative or capability object' };
+      }
+
+      // Check if the object has display metadata (common for NFTs)
+      if (objectData.display && 
+          (objectData.display.data?.name || objectData.display.data?.description)) {
+        return { isCompatible: true };
+      }
+
+      // Check if it has typical NFT fields
+      if (objectData.content && objectData.content.fields) {
+        const fields = objectData.content.fields;
+        
+        // Look for common NFT fields
+        const nftFields = ['name', 'description', 'url', 'image_url', 'metadata'];
+        const hasNFTFields = nftFields.some(field => 
+          fields[field] !== undefined || 
+          (fields.metadata && fields.metadata.fields && fields.metadata.fields[field])
+        );
+        
+        if (hasNFTFields) {
+          return { isCompatible: true };
+        }
+      }
+
+      // If it's not clearly a system object and has some structure, it might be rafflable
+      // But mark it as potentially incompatible
+      if (objectData.content || objectData.display) {
+        return { isCompatible: true };
+      }
+
+      return { 
+        isCompatible: false, 
+        reason: 'Object structure not recognized as NFT' 
+      };
+
+    } catch (error) {
+      return { 
+        isCompatible: false, 
+        reason: `Compatibility check failed: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      };
     }
   }
 

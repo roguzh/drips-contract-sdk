@@ -7,7 +7,7 @@
  */
 export { DripsSDK } from './drips-sdk';
 import { DripsSDK } from './drips-sdk';
-export type { RaffleInfo, NFTMetadata, CreateRaffleParams, JoinRaffleParams, CreateRaffleResult, JoinRaffleResult, WinnerSelectionResult, RaffleDetails, RaffleStatus, SDKConfig, TransactionResult, TransactionBuilderResult, WalletAdapter, RaffleQueryOptions, RaffleQueryResult, DripsSDKError, RaffleNotFoundError, InvalidRaffleStateError, NetworkError } from './types';
+export type { RaffleInfo, NFTMetadata, CreateRaffleParams, JoinRaffleParams, CreateRaffleResult, JoinRaffleResult, WinnerSelectionResult, RaffleDetails, RaffleStatus, SDKConfig, TransactionResult, TransactionBuilderResult, WalletAdapter, RaffleQueryOptions, RaffleQueryResult, RafflableNFT, RafflableNFTsResult, GetRafflableNFTsOptions, DripsSDKError, RaffleNotFoundError, InvalidRaffleStateError, NetworkError } from './types';
 export { DripsUtils, RaffleBuilder, RaffleEventListener } from './utils';
 export declare const PACKAGE_IDS: {
     testnet: string;

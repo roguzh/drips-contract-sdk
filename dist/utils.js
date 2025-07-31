@@ -98,6 +98,82 @@ class DripsUtils {
         const hoursToAdd = Math.floor(Math.random() * (maxHours - minHours + 1)) + minHours;
         return new Date(now.getTime() + hoursToAdd * 60 * 60 * 1000);
     }
+    /**
+     * Filter compatible NFTs from a list
+     */
+    static filterCompatibleNFTs(nfts) {
+        return nfts.filter(nft => nft.isCompatible);
+    }
+    /**
+     * Group NFTs by compatibility
+     */
+    static groupNFTsByCompatibility(nfts) {
+        return {
+            compatible: nfts.filter(nft => nft.isCompatible),
+            incompatible: nfts.filter(nft => !nft.isCompatible)
+        };
+    }
+    /**
+     * Get NFTs with metadata only
+     */
+    static getNFTsWithMetadata(nfts) {
+        return nfts.filter(nft => nft.metadata && DripsUtils.isValidNFTMetadata(nft.metadata));
+    }
+    /**
+     * Sort NFTs by name (metadata name if available, otherwise by object ID)
+     */
+    static sortNFTsByName(nfts) {
+        return nfts.sort((a, b) => {
+            const nameA = a.metadata?.name || a.objectId;
+            const nameB = b.metadata?.name || b.objectId;
+            return nameA.localeCompare(nameB);
+        });
+    }
+    /**
+     * Search NFTs by name or description
+     */
+    static searchNFTs(nfts, query) {
+        const lowercaseQuery = query.toLowerCase();
+        return nfts.filter(nft => {
+            const name = nft.metadata?.name?.toLowerCase() || '';
+            const description = nft.metadata?.description?.toLowerCase() || '';
+            const objectId = nft.objectId.toLowerCase();
+            return name.includes(lowercaseQuery) ||
+                description.includes(lowercaseQuery) ||
+                objectId.includes(lowercaseQuery);
+        });
+    }
+    /**
+     * Get a display name for an NFT
+     */
+    static getNFTDisplayName(nft) {
+        if (nft.metadata?.name) {
+            return nft.metadata.name;
+        }
+        // Try to extract a meaningful name from the type
+        const typeParts = nft.type.split('::');
+        if (typeParts.length >= 2) {
+            return typeParts[typeParts.length - 1]; // Last part of the type
+        }
+        return `NFT ${nft.objectId.slice(0, 8)}...`;
+    }
+    /**
+     * Check if an NFT has an image
+     */
+    static hasImage(nft) {
+        return !!(nft.metadata?.image_url);
+    }
+    /**
+     * Get incompatibility reasons summary
+     */
+    static getIncompatibilityReasons(nfts) {
+        const reasons = {};
+        nfts.filter(nft => !nft.isCompatible).forEach(nft => {
+            const reason = nft.incompatibilityReason || 'Unknown reason';
+            reasons[reason] = (reasons[reason] || 0) + 1;
+        });
+        return reasons;
+    }
 }
 exports.DripsUtils = DripsUtils;
 /**

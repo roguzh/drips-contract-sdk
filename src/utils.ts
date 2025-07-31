@@ -1,5 +1,5 @@
 import { DripsSDK } from './drips-sdk';
-import { RaffleDetails, RaffleStatus, NFTMetadata } from './types';
+import { RaffleDetails, RaffleStatus, NFTMetadata, RafflableNFT } from './types';
 
 /**
  * Utility functions for the Drips SDK
@@ -103,6 +103,98 @@ export class DripsUtils {
     const now = new Date();
     const hoursToAdd = Math.floor(Math.random() * (maxHours - minHours + 1)) + minHours;
     return new Date(now.getTime() + hoursToAdd * 60 * 60 * 1000);
+  }
+
+  /**
+   * Filter compatible NFTs from a list
+   */
+  static filterCompatibleNFTs(nfts: RafflableNFT[]): RafflableNFT[] {
+    return nfts.filter(nft => nft.isCompatible);
+  }
+
+  /**
+   * Group NFTs by compatibility
+   */
+  static groupNFTsByCompatibility(nfts: RafflableNFT[]): {
+    compatible: RafflableNFT[];
+    incompatible: RafflableNFT[];
+  } {
+    return {
+      compatible: nfts.filter(nft => nft.isCompatible),
+      incompatible: nfts.filter(nft => !nft.isCompatible)
+    };
+  }
+
+  /**
+   * Get NFTs with metadata only
+   */
+  static getNFTsWithMetadata(nfts: RafflableNFT[]): RafflableNFT[] {
+    return nfts.filter(nft => nft.metadata && DripsUtils.isValidNFTMetadata(nft.metadata));
+  }
+
+  /**
+   * Sort NFTs by name (metadata name if available, otherwise by object ID)
+   */
+  static sortNFTsByName(nfts: RafflableNFT[]): RafflableNFT[] {
+    return nfts.sort((a, b) => {
+      const nameA = a.metadata?.name || a.objectId;
+      const nameB = b.metadata?.name || b.objectId;
+      return nameA.localeCompare(nameB);
+    });
+  }
+
+  /**
+   * Search NFTs by name or description
+   */
+  static searchNFTs(nfts: RafflableNFT[], query: string): RafflableNFT[] {
+    const lowercaseQuery = query.toLowerCase();
+    return nfts.filter(nft => {
+      const name = nft.metadata?.name?.toLowerCase() || '';
+      const description = nft.metadata?.description?.toLowerCase() || '';
+      const objectId = nft.objectId.toLowerCase();
+      
+      return name.includes(lowercaseQuery) || 
+             description.includes(lowercaseQuery) || 
+             objectId.includes(lowercaseQuery);
+    });
+  }
+
+  /**
+   * Get a display name for an NFT
+   */
+  static getNFTDisplayName(nft: RafflableNFT): string {
+    if (nft.metadata?.name) {
+      return nft.metadata.name;
+    }
+    
+    // Try to extract a meaningful name from the type
+    const typeParts = nft.type.split('::');
+    if (typeParts.length >= 2) {
+      return typeParts[typeParts.length - 1]; // Last part of the type
+    }
+    
+    return `NFT ${nft.objectId.slice(0, 8)}...`;
+  }
+
+  /**
+   * Check if an NFT has an image
+   */
+  static hasImage(nft: RafflableNFT): boolean {
+    return !!(nft.metadata?.image_url);
+  }
+
+  /**
+   * Get incompatibility reasons summary
+   */
+  static getIncompatibilityReasons(nfts: RafflableNFT[]): Record<string, number> {
+    const reasons: Record<string, number> = {};
+    
+    nfts.filter(nft => !nft.isCompatible).forEach(nft => {
+      const reason = nft.incompatibilityReason || 'Unknown reason';
+      reasons[reason] = (reasons[reason] || 0) + 1;
+    });
+    
+    return reasons;
   }
 }
 

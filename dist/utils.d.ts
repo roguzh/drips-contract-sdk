@@ -1,5 +1,5 @@
 import { DripsSDK } from './drips-sdk';
-import { RaffleDetails, RaffleStatus, NFTMetadata } from './types';
+import { RaffleDetails, RaffleStatus, NFTMetadata, RafflableNFT } from './types';
 /**
  * Utility functions for the Drips SDK
  */
@@ -44,6 +44,41 @@ export declare class DripsUtils {
      * Generate a random deadline (for testing)
      */
     static generateRandomDeadline(minHours?: number, maxHours?: number): Date;
+    /**
+     * Filter compatible NFTs from a list
+     */
+    static filterCompatibleNFTs(nfts: RafflableNFT[]): RafflableNFT[];
+    /**
+     * Group NFTs by compatibility
+     */
+    static groupNFTsByCompatibility(nfts: RafflableNFT[]): {
+        compatible: RafflableNFT[];
+        incompatible: RafflableNFT[];
+    };
+    /**
+     * Get NFTs with metadata only
+     */
+    static getNFTsWithMetadata(nfts: RafflableNFT[]): RafflableNFT[];
+    /**
+     * Sort NFTs by name (metadata name if available, otherwise by object ID)
+     */
+    static sortNFTsByName(nfts: RafflableNFT[]): RafflableNFT[];
+    /**
+     * Search NFTs by name or description
+     */
+    static searchNFTs(nfts: RafflableNFT[], query: string): RafflableNFT[];
+    /**
+     * Get a display name for an NFT
+     */
+    static getNFTDisplayName(nft: RafflableNFT): string;
+    /**
+     * Check if an NFT has an image
+     */
+    static hasImage(nft: RafflableNFT): boolean;
+    /**
+     * Get incompatibility reasons summary
+     */
+    static getIncompatibilityReasons(nfts: RafflableNFT[]): Record<string, number>;
 }
 /**
  * Builder pattern for creating raffles

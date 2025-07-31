@@ -1,5 +1,5 @@
 import { SuiClient } from "@mysten/sui/client";
-import { SDKConfig, NFTMetadata, CreateRaffleParams, JoinRaffleParams, CreateRaffleResult, JoinRaffleResult, WinnerSelectionResult, RaffleDetails, TransactionBuilderResult, WalletAdapter, RaffleQueryOptions, RaffleQueryResult } from './types';
+import { SDKConfig, NFTMetadata, CreateRaffleParams, JoinRaffleParams, CreateRaffleResult, JoinRaffleResult, WinnerSelectionResult, RaffleDetails, TransactionBuilderResult, WalletAdapter, RaffleQueryOptions, RaffleQueryResult, RafflableNFTsResult, GetRafflableNFTsOptions } from './types';
 /**
  * Main Drips Raffle SDK class for interacting with Drips contracts on Sui
  */
@@ -64,6 +64,19 @@ export declare class DripsSDK {
      * Get NFT metadata
      */
     getNFTMetadata(nftId: string): Promise<NFTMetadata | null>;
+    /**
+     * Get all rafflable NFTs owned by a user
+     * Returns NFTs that can be used to create raffles
+     */
+    getRafflableNFTs(userAddress: string, options?: GetRafflableNFTsOptions): Promise<RafflableNFTsResult>;
+    /**
+     * Check if an object is a system object (coin, gas object, etc.)
+     */
+    private isSystemObject;
+    /**
+     * Check if an NFT is compatible with the raffle contract
+     */
+    private checkNFTCompatibility;
     /**
      * Get all active raffles (requires tracking raffle IDs externally)
      */

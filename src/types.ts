@@ -33,6 +33,30 @@ export interface NFTMetadata {
   attributes?: any[];
 }
 
+export interface HouseInfo {
+  objectId: string;
+  version: string;
+  digest: string;
+  type: string;
+  feePercentage: number; // Fee percentage in basis points (e.g., 100 = 1%)
+  feeBalances: Record<string, string>; // Coin type -> balance mapping
+  kioskOwnerCapId: string;
+  formattedFeePercentage: string; // Human readable percentage (e.g., "1%")
+}
+
+export interface RaffleFinancials {
+  entryCost: string; // Cost per ticket in MIST (1 SUI = 1e9 MIST)
+  totalBalance: string; // Total accumulated balance in MIST
+  participantsCount: number; // Number of participants/tickets sold
+  totalRevenue: string; // Total revenue generated (participants * cost)
+  houseRevenue: string; // Estimated house fee taken
+  netBalance: string; // Balance remaining in raffle after fees
+  formattedEntryCost: string; // Human readable cost (e.g., "0.1 SUI")
+  formattedTotalBalance: string; // Human readable balance
+  formattedTotalRevenue: string; // Human readable revenue
+  isFree: boolean; // Whether the raffle is free to join
+}
+
 export interface CreateRaffleParams {
   nftId: string;
   deadline: Date;

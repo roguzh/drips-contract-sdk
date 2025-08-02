@@ -10,8 +10,6 @@ test.js
 test.js.map
 
 # Environment files
-.env
-.env.local
 .env.*.local
 
 # Logs
@@ -22,7 +20,6 @@ yarn-debug.log*
 yarn-error.log*
 
 # Editor directories and files
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -57,3 +54,4 @@ jspm_packages/
 
 # Yarn Integrity file
 .yarn-integrity
+config.bat

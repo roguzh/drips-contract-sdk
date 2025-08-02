@@ -30,7 +30,9 @@
   },
   "dependencies": {
     "@mysten/kiosk": "^0.8.1",
-    "@mysten/sui": "^1.0.0"
+    "@mysten/sui": "^1.0.0",
+    "dotenv": "^8.2.0",
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

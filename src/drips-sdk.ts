@@ -6,6 +6,7 @@ import {
   SDKConfig,
   RaffleInfo,
   NFTMetadata,
+  HouseInfo,
   CreateRaffleParams,
   JoinRaffleParams,
   CreateRaffleResult,
@@ -617,6 +618,80 @@ export class DripsSDK {
 
     } catch (error) {
       throw new NetworkError(`Failed to fetch NFT metadata: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get house information including fee percentage and balances
+   */
+  async getHouseInfo(): Promise<HouseInfo> {
+    try {
+      const houseData = await this.client.getObject({
+        id: this.config.houseId,
+        options: {
+          showContent: true,
+          showType: true,
+        },
+      });
+
+      if (!houseData.data || !houseData.data.content || !('fields' in houseData.data.content)) {
+        throw new DripsSDKError('House object not found or invalid structure');
+      }
+
+      const fields = houseData.data.content.fields as any;
+
+      // Extract fee balances from the Bag structure
+      const feeBalances: Record<string, string> = {};
+      if (fields.fee_balance && fields.fee_balance.fields && fields.fee_balance.fields.size) {
+        // The fee_balance is a Bag, we'd need to query its dynamic fields to get all balances
+        // For now, we'll show that it exists but may be empty in this basic implementation
+        try {
+          const bagContents = await this.client.getDynamicFields({
+            parentId: fields.fee_balance.fields.id.id,
+          });
+          
+          for (const item of bagContents.data) {
+            if (item.name && typeof item.name === 'object' && 'value' in item.name) {
+              const coinType = item.name.value as string;
+              // Get the actual balance value
+              const balanceData = await this.client.getDynamicFieldObject({
+                parentId: fields.fee_balance.fields.id.id,
+                name: item.name,
+              });
+              
+              if (balanceData.data?.content && 'fields' in balanceData.data.content) {
+                const balanceFields = balanceData.data.content.fields as any;
+                feeBalances[coinType] = balanceFields.value || '0';
+              }
+            }
+          }
+        } catch (bagError) {
+          // If we can't read the bag contents, just note that it exists
+          console.warn('Could not read fee balance details:', bagError);
+        }
+      }
+
+      const feePercentage = parseInt(fields.fee_percentage) || 0;
+      const formattedFeePercentage = (feePercentage / 100).toFixed(2) + '%';
+      
+      const houseInfo: HouseInfo = {
+        objectId: houseData.data.objectId,
+        version: houseData.data.version,
+        digest: houseData.data.digest,
+        type: houseData.data.type || '',
+        feePercentage,
+        feeBalances,
+        kioskOwnerCapId: fields.kiosk_owner_cap?.fields?.id?.id || fields.kiosk_owner_cap || '',
+        formattedFeePercentage,
+      };
+
+      return houseInfo;
+
+    } catch (error) {
+      if (error instanceof DripsSDKError) {
+        throw error;
+      }
+      throw new NetworkError(`Failed to fetch house information: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
